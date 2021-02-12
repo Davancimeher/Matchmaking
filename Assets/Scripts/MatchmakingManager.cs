@@ -1,70 +1,106 @@
-﻿using System.Collections;
+﻿using System;
 using System.Collections.Generic;
-using UnityEngine;
 using System.Linq;
-using TMPro;
 using System.Threading.Tasks;
-using System.Threading;
-using System;
+using TMPro;
+using UnityEngine;
 
-///ready to implement in unity project
+
+[System.Serializable]
+public struct Player
+{
+    public int PlayerId;
+    //Player with GroupId = 0 => not grouped
+    public int GroupId;
+
+    public Player(int playerId, int groupId)
+    {
+        PlayerId = playerId;
+        GroupId = groupId;
+    }
+}
+public struct GroupInfo
+{
+    public int GroupId;
+    public int GroupCount;
+    public Player[] GroupPlayers;
+
+    public GroupInfo(int groupId)
+    {
+        GroupId = groupId;
+        GroupCount = 1;
+        GroupPlayers = new Player[1];
+    }
+}
+
+
 public class MatchmakingManager : MonoBehaviour
 {
-    public TMP_InputField PlayersCount;
-    public TMP_InputField GroupsCount;
-    public TextMeshProUGUI MatchFoundTxt;
-    public TextMeshProUGUI PlayersInLobbyTxt;
+    public TMP_InputField playersCount;
+    public TMP_InputField groupsCount;
+    public TextMeshProUGUI matchFoundText;
+    public TextMeshProUGUI playersInLobbyText;
 
-    private Player[] AllPlayersInMM;
-    private Player[] Team1;
-    private Player[] Team2;
+    public Player[] _allPlayersInMM;
+    private Player[] _team1;
+    private Player[] _team2;
 
-    private int Matchfound;
-    public Task< Dictionary<int,int>> RandomizeGroups(int groupsCount)
+    private int matchsfound;
+
+    private int _lastGroupId;
+    private bool _groupInforSorted = false;
+
+    public Task<int[]> RandomizeGroups(int groupsCount)
     {
-        Dictionary<int, int> GroupsCountDict = new Dictionary<int, int>();
 
-        for (int i = 1; i < groupsCount; i++)
+        int[] groups = new int[groupsCount + 1];
+
+        for (int i = 1; i <= groupsCount; i++)
         {
-            GroupsCountDict.Add(i,UnityEngine.Random.Range(2, 6));
+            var groupCount = UnityEngine.Random.Range(2, 6);
+            groups[i] = groupCount;
         }
-        return Task.FromResult < Dictionary<int, int> > (GroupsCountDict);
+        _lastGroupId = 1;
+        _groupInforSorted = false;
+
+        return Task.FromResult(groups);
     }
-    public int GetGroup(Dictionary<int, int> GroupsCountDict)
+    public int GetGroup(int[] _groupsCount)
     {
-        if (GroupsCountDict.Count <= 0) return 0;
+        if (_lastGroupId > _groupsCount.Length - 1) return 0;
 
-        int groupId = GroupsCountDict.First().Key;
+        var idGroup = _lastGroupId;
+        _groupsCount[_lastGroupId]--;
 
-        GroupsCountDict[groupId] = GroupsCountDict[groupId] - 1;
-
-        if (GroupsCountDict.First().Value <= 0)
+        if (_groupsCount[_lastGroupId] <= 0)
         {
-            GroupsCountDict.Remove(groupId);
+            _lastGroupId++;
         }
-        return groupId;
+        return idGroup;
     }
-    public async Task< Player[]> RandomizePlayers(int playersCount,int groupsCount)
+    public async Task<Player[]> RandomizePlayers(int playersCount, int groupsCount)
     {
-        List<Player> PlayersRandomized = new List<Player>();
+        Player[] playersRandomized = new Player[playersCount];
 
-        Dictionary<int, int> GroupsCountDict = await  RandomizeGroups(groupsCount);
+        int[] groups = await RandomizeGroups(groupsCount);
 
         for (int i = 0; i < playersCount; i++)
         {
-            Player player = new Player(i, GetGroup(GroupsCountDict));
-            PlayersRandomized.Add(player);
-            Task.Delay(1).Wait();
+            Player player = new Player(i, GetGroup(groups));
+            playersRandomized[i] = player;
         }
-
-        return PlayersRandomized.ToArray(); 
+        return playersRandomized;
     }
 
     public async void StartMatchMaking()
     {
-        Matchfound = 0;
-        AllPlayersInMM = await RandomizePlayers(int.Parse(PlayersCount.text), int.Parse(GroupsCount.text));
-        TeamGroupingtest(AllPlayersInMM, Team1, Team2);
+        matchsfound = 0;
+        _allPlayersInMM = await RandomizePlayers(int.Parse(playersCount.text), int.Parse(groupsCount.text));
+        TeamGroupingtest(_allPlayersInMM, _team1, _team2);
+    }
+    private void Update()
+    {
+
     }
     /// create a clone from AllplayersinMM as a liste (easy to manipulate)
     /// create a dictionary<int,list<player> to split our player with groups
@@ -83,135 +119,140 @@ public class MatchmakingManager : MonoBehaviour
     /// <param name="allPlayersInMM"></param>
     /// <param name="Team1"></param>
     /// <param name="Team2"></param>
-    private void TeamGroupingtest(Player[] allPlayersInMM,  Player[] Team1, Player[] Team2)
+    private void TeamGroupingtest(Player[] allPlayersInMM, Player[] Team1, Player[] Team2)
     {
         //if all players < 10 ,return without any calcul
         if (allPlayersInMM.Length < 10)
         {
-            MatchFoundTxt.text = Matchfound.ToString();
-            PlayersInLobbyTxt.text = AllPlayersInMM.Length.ToString();
+            matchFoundText.text = matchsfound.ToString();
+            playersInLobbyText.text = _allPlayersInMM.Length.ToString();
             return;
         }
         //get a image of all players in List
-        List<Player> AllPlayers = new List<Player>(allPlayersInMM);
-        //list of 2 teams
+        List<Player> allPlayers = new List<Player>(allPlayersInMM);
 
+        //list of 2 teams
         List<Player> team1 = new List<Player>();
         List<Player> team2 = new List<Player>();
 
         //list of not grouped players
-        List<Player> NonGroupedPlayers = new List<Player>();
-        //fill the list of not groupped players
-        NonGroupedPlayers = AllPlayers.FindAll(x => x.GroupId == 0);
+        List<Player> nonGroupedPlayers = allPlayers.FindAll(x => x.GroupId == 0);
+
         //remove all not grouped players from all players
-        AllPlayers.RemoveAll(r => r.GroupId == 0);
-        //dicionary contient ID of the groupe and list of players
+        allPlayers.RemoveAll(r => r.GroupId == 0);
 
 
-        Dictionary<int, List<Player>> Groupe = new Dictionary<int, List<Player>>();
-        //dicionary contient ID of the groupe and numbre of players
-        Dictionary<int, int> GroupsInfoDict = new Dictionary<int, int>();
+        GroupInfo[] groupInfos = new GroupInfo[0];
+
         //splitting players with GroupeID
-        foreach (Player _player in AllPlayers)
+        foreach (Player _player in allPlayers)
         {
-            if (!Groupe.ContainsKey(_player.GroupId))
+            var index = Array.FindIndex(groupInfos, id => id.GroupId == _player.GroupId);
+
+            if (index >= 0)
             {
-                //add the key and value into groupe dictionary(groupeID,list of players)
-                Groupe.Add(_player.GroupId, new List<Player> { _player });
-                //add the key and value into groupe informations dictionary(groupeID,number of players)
-                GroupsInfoDict.Add(_player.GroupId, 1);
+                GroupInfo groupInfo = groupInfos[index];
+
+                Array.Resize(ref groupInfo.GroupPlayers, groupInfo.GroupPlayers.Length + 1);
+
+                groupInfo.GroupPlayers[groupInfo.GroupPlayers.Length - 1] = _player;
+
+                groupInfo.GroupCount = groupInfo.GroupPlayers.Length;
+
+                groupInfos[index] = groupInfo;
             }
             else
             {
-                //add the player to his list
-                Groupe[_player.GroupId].Add(_player);
-                //increase the value of list counts 
-                GroupsInfoDict[_player.GroupId]++;
+                Player[] players = { _player };
+                GroupInfo groupInfo = new GroupInfo(_player.GroupId);
+                groupInfo.GroupPlayers = players;
+
+                Array.Resize(ref groupInfos, groupInfos.Length + 1);
+                groupInfos[groupInfos.Length - 1] = groupInfo;
             }
         }
 
-
-
         //set 2 teams from non-grouped players if we don't have any groupe
-        if (GroupsInfoDict.Count <= 0)
+        if (groupInfos.Length <= 0)
         {
-            if(NonGroupedPlayers.Count < 10)
+            if (nonGroupedPlayers.Count < 10)
             {
-                // Debug.Log("Not enough Players !");
+                Debug.Log("Not enough Players !");
                 return;
             }
-
-          //  Debug.Log("set 2 teams from not grouped players");
             //set 2 teams from not grouped players
-            SetFromNonGroupedPlayers(NonGroupedPlayers, team1, team2, 5);
+            SetFromNonGroupedPlayers(nonGroupedPlayers, team1, team2, 5);
         }
 
         //we Have some groups
         else
         {
-            SetTeams(team1, team2, GroupsInfoDict, Groupe, 5);
+            OrderGroupInfoArray(ref groupInfos);
+            SetTeams(team1, team2, ref groupInfos, 5);
+
             //if we don't have 2 complete teams,and we have enough not grouped players
-            if (NonGroupedPlayers.Count >= 10 - (team1.Count + team2.Count))
+            if (nonGroupedPlayers.Count >= 10 - (team1.Count + team2.Count))
             {
-                SetFromNonGroupedPlayers(NonGroupedPlayers, team1, team2, 5);
+                SetFromNonGroupedPlayers(nonGroupedPlayers, team1, team2, 5);
             }
             //we don't have enough not grouped players
             else
             {
-                MatchFoundTxt.text = Matchfound.ToString();
-                PlayersInLobbyTxt.text = AllPlayersInMM.Length.ToString();
+                matchFoundText.text = matchsfound.ToString();
+                playersInLobbyText.text = _allPlayersInMM.Length.ToString();
                 return;
             }
         }
+
         Team1 = team1.ToArray();
         Team2 = team2.ToArray();
 
         RemoveMatchedPlayers(team1, team2);
 
-         //Debug.Log("we have " + team1.Count + " players in team 1, and we have " + team2.Count + " players in team 2");
-        Matchfound++;
-        TeamGroupingtest(AllPlayersInMM, Team1, Team2);
+        matchsfound++;
+
+        TeamGroupingtest(_allPlayersInMM, Team1, Team2);
+
     }
-    /// <summary>
-    /// set teams from groupe players into team 1 and team 2 referenced by groupe informations and team count
-    /// </summary>
-    /// <param name="_Team1"></param>
-    /// <param name="_Team2"></param>
-    /// <param name="_GroupeInformations"></param>
-    /// <param name="_Groupes"></param>
-    /// <param name="TeamCount"></param>
-    public void SetTeams(List<Player> _Team1, List<Player> _Team2, Dictionary<int, int> _GroupeInformations, Dictionary<int, List<Player>> _Groupes, int TeamCount)
+    public void SetTeams(List<Player> _Team1, List<Player> _Team2, ref GroupInfo[] groupInfos, int TeamCount)
     {
-        //ordering the dictionary "groupsInfo" descending by groups count
-        var OderedGroupInfoDict = from pair in _GroupeInformations orderby pair.Value descending select pair;
+        List<int> usedGroupsIndex = new List<int>();
 
-        foreach (var GroupInfo in OderedGroupInfoDict)
+        foreach (var GroupInfo in groupInfos)
         {
-            if (GetSmallestTeamCount(_Team1, _Team2) + GroupInfo.Value <= TeamCount)
+            if (GetSmallestTeamCount(_Team1, _Team2) + GroupInfo.GroupCount <= TeamCount)
             {
-                GetSmallestTeam(_Team1, _Team2).AddRange(_Groupes[GroupInfo.Key]);
-
-               //Debug.Log("we added " + GroupInfo.Value + " players from " + GroupInfo.Key);
+                GetSmallestTeam(_Team1, _Team2).AddRange(GroupInfo.GroupPlayers);
+                usedGroupsIndex.Add(GroupInfo.GroupId);
             }
             //we have already 2 teams
             if ((_Team1.Count + _Team2.Count).Equals(TeamCount * 2))
             {
-                //Debug.Log("we have 2 teams");
-                Team1 = _Team1.ToArray();
-                Team2 = _Team2.ToArray();
+                _team1 = _Team1.ToArray();
+                _team2 = _Team2.ToArray();
                 return;
             }
         }
 
+        if (usedGroupsIndex.Count > 0)
+        {
+            List<GroupInfo> groupInfoList = new List<GroupInfo>(groupInfos);
+
+            foreach (var usedGroupId in usedGroupsIndex)
+            {
+                groupInfoList.RemoveAll(r => r.GroupId == usedGroupId);
+            }
+            groupInfos = groupInfos.ToArray();
+        }
     }
 
     public void SetFromNonGroupedPlayers(List<Player> _NonGroupedPlayers, List<Player> _Team1, List<Player> _Team2, int teamcount)
     {
         int team1Index = teamcount - _Team1.Count;
 
-        _Team1.AddRange(_NonGroupedPlayers.GetRange(0,teamcount - _Team1.Count));
+        _Team1.AddRange(_NonGroupedPlayers.GetRange(0, teamcount - _Team1.Count));
 
-        _Team2.AddRange(_NonGroupedPlayers.GetRange(team1Index,teamcount - _Team2.Count));
+        _Team2.AddRange(_NonGroupedPlayers.GetRange(team1Index, teamcount - _Team2.Count));
     }
 
     /// <summary>
@@ -245,23 +286,26 @@ public class MatchmakingManager : MonoBehaviour
 
     public void RemoveMatchedPlayers(List<Player> _Team1, List<Player> _Team2)
     {
-        var clone= AllPlayersInMM.ToList();
-        var  MatchedPlayers = _Team1.Concat(_Team2).ToList();
-        clone.RemoveAll(x => MatchedPlayers.Any(y => y.PlayerId == x.PlayerId));
-        AllPlayersInMM = clone.ToArray();
+        var allPlayers = _allPlayersInMM.ToList();
+        var MatchedPlayers = _Team1;
+        MatchedPlayers.AddRange(_Team2);
+
+        allPlayers.RemoveAll(x => MatchedPlayers.Any(y => y.PlayerId == x.PlayerId));
+        _allPlayersInMM = allPlayers.ToArray();
     }
-}
-
-[System.Serializable]
-public struct Player
-{
-    public int PlayerId;
-    //Player with GroupId = 0 => not grouped
-    public int GroupId;
-
-    public Player(int playerId, int groupId)
+    public void OrderGroupInfoArray(ref GroupInfo[] _groupInfos)
     {
-        PlayerId = playerId;
-        GroupId = groupId;
+        if (_groupInforSorted) return;
+        Array.Sort(_groupInfos, new GroupInfoComparer());
+        _groupInforSorted = true;
+    }
+
+    public class GroupInfoComparer : IComparer<GroupInfo>
+    {
+        public int Compare(GroupInfo x, GroupInfo y)
+        {
+            if (x.GroupCount > y.GroupCount) return -1;
+            else return 0;
+        }
     }
 }

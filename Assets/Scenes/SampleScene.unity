@@ -466,10 +466,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3fecc91969bea744ba929ccfb8adc7b3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  PlayersCount: {fileID: 1932396794}
-  GroupsCount: {fileID: 1646574259}
-  MatchFoundTxt: {fileID: 1724254863}
-  PlayersInLobbyTxt: {fileID: 341069448}
+  playersCount: {fileID: 1932396794}
+  groupsCount: {fileID: 1646574259}
+  matchFoundText: {fileID: 1724254863}
+  playersInLobbyText: {fileID: 341069448}
+  _allPlayersInMM: []
 --- !u!4 &362583282
 Transform:
   m_ObjectHideFlags: 0
@@ -1359,7 +1360,7 @@ GameObject:
   - component: {fileID: 1646574260}
   - component: {fileID: 1646574259}
   m_Layer: 5
-  m_Name: InputField (TMP) (1)
+  m_Name: Groups inputfield
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2064,7 +2065,7 @@ GameObject:
   - component: {fileID: 1932396795}
   - component: {fileID: 1932396794}
   m_Layer: 5
-  m_Name: InputField (TMP)
+  m_Name: Total Player inputfield
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
