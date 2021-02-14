@@ -304,6 +304,53 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 181284986}
   m_CullTransparentMesh: 0
+--- !u!1 &212286757
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 212286759}
+  - component: {fileID: 212286758}
+  m_Layer: 0
+  m_Name: ----UIManager----
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &212286758
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 212286757}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: caf46804b33f998459a0d1cd8450c862, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  playersCount: {fileID: 1932396794}
+  groupsCount: {fileID: 1646574259}
+  matchMakedText: {fileID: 1724254863}
+  playersInLobbyText: {fileID: 341069448}
+--- !u!4 &212286759
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 212286757}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 440.59467, y: 425.1542, z: -52.982254}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 1
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &341069446
 GameObject:
   m_ObjectHideFlags: 0
@@ -447,6 +494,7 @@ GameObject:
   m_Component:
   - component: {fileID: 362583282}
   - component: {fileID: 362583281}
+  - component: {fileID: 362583283}
   m_Layer: 0
   m_Name: ----Matchmaking Manager----
   m_TagString: Untagged
@@ -466,10 +514,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3fecc91969bea744ba929ccfb8adc7b3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  playersCount: {fileID: 1932396794}
-  groupsCount: {fileID: 1646574259}
-  matchFoundText: {fileID: 1724254863}
-  playersInLobbyText: {fileID: 341069448}
+  randomizePlayers: {fileID: 362583283}
+  uIManager: {fileID: 212286758}
   _allPlayersInMM: []
 --- !u!4 &362583282
 Transform:
@@ -485,6 +531,18 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &362583283
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 362583280}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f7ce901fcf4448445966f3c0d67beba7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &865086615
 GameObject:
   m_ObjectHideFlags: 0
@@ -699,7 +757,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 1
+  m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1090728054
 GameObject:
@@ -1121,7 +1179,7 @@ RectTransform:
   - {fileID: 1169579807}
   - {fileID: 1606728356}
   m_Father: {fileID: 0}
-  m_RootOrder: 3
+  m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
@@ -2315,7 +2373,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 2
+  m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 50, y: -30, z: 0}
 --- !u!1 &1961217454
 GameObject:
@@ -2381,7 +2439,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 4
+  m_RootOrder: 5
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2076747787
 GameObject:

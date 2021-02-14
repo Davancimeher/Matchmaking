@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
-using TMPro;
 using UnityEngine;
 
 
@@ -19,89 +17,58 @@ public struct Player
         GroupId = groupId;
     }
 }
-public struct GroupInfo
+public struct GroupInfo : IComparable<GroupInfo>
 {
     public int GroupId;
-    public int GroupCount;
     public Player[] GroupPlayers;
 
     public GroupInfo(int groupId)
     {
         GroupId = groupId;
-        GroupCount = 1;
         GroupPlayers = new Player[1];
+    }
+    public int CompareTo(GroupInfo other)
+    {
+        if (this.GroupPlayers.Length < other.GroupPlayers.Length)
+        {
+            return 1;
+        }
+        else if (this.GroupPlayers.Length > other.GroupPlayers.Length)
+        {
+            return -1;
+        }
+        else
+        {
+            return 0;
+        }
     }
 }
 
 
 public class MatchmakingManager : MonoBehaviour
 {
-    public TMP_InputField playersCount;
-    public TMP_InputField groupsCount;
-    public TextMeshProUGUI matchFoundText;
-    public TextMeshProUGUI playersInLobbyText;
+    const int playerPerTeamCount = 5;
+    const int playerPerMatchCount = playerPerTeamCount * 2;
+
+    public RandomizeMatchMakingData randomizePlayers;
+    public UIManager uIManager; 
 
     public Player[] _allPlayersInMM;
-    private Player[] _team1;
-    private Player[] _team2;
 
-    private int matchsfound;
+    private List<Player> _team1 = new List<Player>();
+    private List<Player> _team2 = new List<Player>();
 
-    private int _lastGroupId;
-    private bool _groupInforSorted = false;
+    private int _matchsMaked;
 
-    public Task<int[]> RandomizeGroups(int groupsCount)
+    //called from UI : button start matchmaking
+    public void StartMatchMaking()
     {
+        _matchsMaked = 0;
+        _allPlayersInMM =  randomizePlayers.CreatePlayers(int.Parse(uIManager.playersCount.text), int.Parse(uIManager.groupsCount.text));
 
-        int[] groups = new int[groupsCount + 1];
-
-        for (int i = 1; i <= groupsCount; i++)
-        {
-            var groupCount = UnityEngine.Random.Range(2, 6);
-            groups[i] = groupCount;
-        }
-        _lastGroupId = 1;
-        _groupInforSorted = false;
-
-        return Task.FromResult(groups);
-    }
-    public int GetGroup(int[] _groupsCount)
-    {
-        if (_lastGroupId > _groupsCount.Length - 1) return 0;
-
-        var idGroup = _lastGroupId;
-        _groupsCount[_lastGroupId]--;
-
-        if (_groupsCount[_lastGroupId] <= 0)
-        {
-            _lastGroupId++;
-        }
-        return idGroup;
-    }
-    public async Task<Player[]> RandomizePlayers(int playersCount, int groupsCount)
-    {
-        Player[] playersRandomized = new Player[playersCount];
-
-        int[] groups = await RandomizeGroups(groupsCount);
-
-        for (int i = 0; i < playersCount; i++)
-        {
-            Player player = new Player(i, GetGroup(groups));
-            playersRandomized[i] = player;
-        }
-        return playersRandomized;
+        TeamGroupingtest(_allPlayersInMM);
     }
 
-    public async void StartMatchMaking()
-    {
-        matchsfound = 0;
-        _allPlayersInMM = await RandomizePlayers(int.Parse(playersCount.text), int.Parse(groupsCount.text));
-        TeamGroupingtest(_allPlayersInMM, _team1, _team2);
-    }
-    private void Update()
-    {
-
-    }
     /// create a clone from AllplayersinMM as a liste (easy to manipulate)
     /// create a dictionary<int,list<player> to split our player with groups
     /// create a dictionary<int,int> to handle groupe ID with size
@@ -119,21 +86,20 @@ public class MatchmakingManager : MonoBehaviour
     /// <param name="allPlayersInMM"></param>
     /// <param name="Team1"></param>
     /// <param name="Team2"></param>
-    private void TeamGroupingtest(Player[] allPlayersInMM, Player[] Team1, Player[] Team2)
+    private void TeamGroupingtest(Player[] allPlayersInMM)
     {
+        _team1.Clear();
+        _team2.Clear();
+
         //if all players < 10 ,return without any calcul
-        if (allPlayersInMM.Length < 10)
+        if (allPlayersInMM.Length < playerPerMatchCount)
         {
-            matchFoundText.text = matchsfound.ToString();
-            playersInLobbyText.text = _allPlayersInMM.Length.ToString();
+            uIManager.SetMatchMakingResults(_matchsMaked, _allPlayersInMM.Length);
             return;
         }
+
         //get a image of all players in List
         List<Player> allPlayers = new List<Player>(allPlayersInMM);
-
-        //list of 2 teams
-        List<Player> team1 = new List<Player>();
-        List<Player> team2 = new List<Player>();
 
         //list of not grouped players
         List<Player> nonGroupedPlayers = allPlayers.FindAll(x => x.GroupId == 0);
@@ -157,8 +123,6 @@ public class MatchmakingManager : MonoBehaviour
 
                 groupInfo.GroupPlayers[groupInfo.GroupPlayers.Length - 1] = _player;
 
-                groupInfo.GroupCount = groupInfo.GroupPlayers.Length;
-
                 groupInfos[index] = groupInfo;
             }
             else
@@ -181,55 +145,50 @@ public class MatchmakingManager : MonoBehaviour
                 return;
             }
             //set 2 teams from not grouped players
-            SetFromNonGroupedPlayers(nonGroupedPlayers, team1, team2, 5);
+            SetFromNonGroupedPlayers(nonGroupedPlayers);
         }
 
         //we Have some groups
         else
         {
             OrderGroupInfoArray(ref groupInfos);
-            SetTeams(team1, team2, ref groupInfos, 5);
+
+            SetTeams(ref groupInfos);
 
             //if we don't have 2 complete teams,and we have enough not grouped players
-            if (nonGroupedPlayers.Count >= 10 - (team1.Count + team2.Count))
+            if (nonGroupedPlayers.Count >= playerPerMatchCount - (_team1.Count + _team2.Count))
             {
-                SetFromNonGroupedPlayers(nonGroupedPlayers, team1, team2, 5);
+                SetFromNonGroupedPlayers(nonGroupedPlayers);
             }
             //we don't have enough not grouped players
             else
             {
-                matchFoundText.text = matchsfound.ToString();
-                playersInLobbyText.text = _allPlayersInMM.Length.ToString();
+                uIManager.SetMatchMakingResults(_matchsMaked, _allPlayersInMM.Length);
                 return;
             }
         }
 
-        Team1 = team1.ToArray();
-        Team2 = team2.ToArray();
+        RemoveMatchedPlayers();
 
-        RemoveMatchedPlayers(team1, team2);
+        _matchsMaked++;
 
-        matchsfound++;
-
-        TeamGroupingtest(_allPlayersInMM, Team1, Team2);
+        TeamGroupingtest(_allPlayersInMM);
 
     }
-    public void SetTeams(List<Player> _Team1, List<Player> _Team2, ref GroupInfo[] groupInfos, int TeamCount)
+    private void SetTeams(ref GroupInfo[] groupInfos)
     {
         List<int> usedGroupsIndex = new List<int>();
 
         foreach (var GroupInfo in groupInfos)
         {
-            if (GetSmallestTeamCount(_Team1, _Team2) + GroupInfo.GroupCount <= TeamCount)
+            if (GetNextTeam().Count + GroupInfo.GroupPlayers.Length <= playerPerTeamCount)
             {
-                GetSmallestTeam(_Team1, _Team2).AddRange(GroupInfo.GroupPlayers);
+                GetNextTeam().AddRange(GroupInfo.GroupPlayers);
                 usedGroupsIndex.Add(GroupInfo.GroupId);
             }
             //we have already 2 teams
-            if ((_Team1.Count + _Team2.Count).Equals(TeamCount * 2))
+            if ((_team1.Count + _team2.Count).Equals(playerPerMatchCount))
             {
-                _team1 = _Team1.ToArray();
-                _team2 = _Team2.ToArray();
                 return;
             }
         }
@@ -246,13 +205,13 @@ public class MatchmakingManager : MonoBehaviour
         }
     }
 
-    public void SetFromNonGroupedPlayers(List<Player> _NonGroupedPlayers, List<Player> _Team1, List<Player> _Team2, int teamcount)
+    private void SetFromNonGroupedPlayers(List<Player> _NonGroupedPlayers)
     {
-        int team1Index = teamcount - _Team1.Count;
+        int team1Index = playerPerTeamCount - _team1.Count;
 
-        _Team1.AddRange(_NonGroupedPlayers.GetRange(0, teamcount - _Team1.Count));
+        _team1.AddRange(_NonGroupedPlayers.GetRange(0, playerPerTeamCount - _team1.Count));
 
-        _Team2.AddRange(_NonGroupedPlayers.GetRange(team1Index, teamcount - _Team2.Count));
+        _team2.AddRange(_NonGroupedPlayers.GetRange(team1Index, playerPerTeamCount - _team2.Count));
     }
 
     /// <summary>
@@ -261,51 +220,22 @@ public class MatchmakingManager : MonoBehaviour
     /// <param name="_Team1"></param>
     /// <param name="_Team2"></param>
     /// <returns></returns>
-    public List<Player> GetSmallestTeam(List<Player> _Team1, List<Player> _Team2)
+    private List<Player> GetNextTeam()
     {
-        if (_Team1.Count > _Team2.Count)
-        {
-            return _Team2;
-        }
-        else
-        {
-            return _Team1;
-        }
+        return _team1.Count > _team2.Count ? _team1 : _team2;
     }
-    public int GetSmallestTeamCount(List<Player> _Team1, List<Player> _Team2)
-    {
-        if (_Team1.Count > _Team2.Count)
-        {
-            return _Team2.Count;
-        }
-        else
-        {
-            return _Team1.Count;
-        }
-    }
-
-    public void RemoveMatchedPlayers(List<Player> _Team1, List<Player> _Team2)
+    private void RemoveMatchedPlayers()
     {
         var allPlayers = _allPlayersInMM.ToList();
-        var MatchedPlayers = _Team1;
-        MatchedPlayers.AddRange(_Team2);
+        var MatchedPlayers = _team1;
+        MatchedPlayers.AddRange(_team2);
 
         allPlayers.RemoveAll(x => MatchedPlayers.Any(y => y.PlayerId == x.PlayerId));
         _allPlayersInMM = allPlayers.ToArray();
     }
-    public void OrderGroupInfoArray(ref GroupInfo[] _groupInfos)
-    {
-        if (_groupInforSorted) return;
-        Array.Sort(_groupInfos, new GroupInfoComparer());
-        _groupInforSorted = true;
-    }
 
-    public class GroupInfoComparer : IComparer<GroupInfo>
+    private void OrderGroupInfoArray(ref GroupInfo[] _groupInfos)
     {
-        public int Compare(GroupInfo x, GroupInfo y)
-        {
-            if (x.GroupCount > y.GroupCount) return -1;
-            else return 0;
-        }
+        Array.Sort(_groupInfos);
     }
 }
