@@ -1,4 +1,4 @@
-# Matchmaking Solution
+## Matchmaking Solution
 <img src="https://github.com/Davancimeher/MatchmakingTest/blob/main/README.Assets/Matchmaking_Logic.PNG" width="1000">
 
 # Create a simple Matchmaking solution based on Groups
