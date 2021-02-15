@@ -20,7 +20,8 @@ __( " JUST TO TEST THE DESIGN ",in real case,we get only the leader of the group
   player 4 : Id = 4, groupId = 0
   
   In this example,Player 1 and Player 2 are in the same group
-  and Player 3 and Player 4 are SOLO players (group ID = 0)
+ 
+  Player 3 and Player 4 are SOLO players (group ID = 0)
   
 # MatchmakingManager class
 1- Start the match making with creation of an array of groupInfo (Hold the groupid and the list of players)
