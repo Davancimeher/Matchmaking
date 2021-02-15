@@ -2,7 +2,7 @@
 <img src="https://github.com/Davancimeher/MatchmakingTest/blob/main/README.Assets/Matchmaking_Logic.PNG" width="1000">
 
 ## Create a simple Matchmaking solution based on Groups
-# Generate array of Random players using RandomizeMatchMakingData class,( " JUST TO TEST THE DESIGN ",in real case,we get only the leader of the group in the list of all players ) 
+# Generate array of Random players using RandomizeMatchMakingData class  "( " JUST TO TEST THE DESIGN ",in real case,we get only the leader of the group in the list of all players ) "
 
   From UI inputs, we get players count and groups count,to create an array of players and assign them to the random 
   groups.
