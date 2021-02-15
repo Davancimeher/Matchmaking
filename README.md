@@ -1,7 +1,7 @@
 # Matchmaking Solution
 <img src="https://github.com/Davancimeher/MatchmakingTest/blob/main/README.Assets/Matchmaking_Logic.PNG" width="1000">
 
-## Create a simple Matchmaking solution based on Groups
+# Create a simple Matchmaking solution based on Groups
 # Generate array of Random players using RandomizeMatchMakingData class
 
 __( " JUST TO TEST THE DESIGN ",in real case,we get only the leader of the group in the list of all players )__
