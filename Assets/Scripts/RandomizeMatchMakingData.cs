@@ -1,7 +1,5 @@
 ﻿using System;
-using UnityEngine;
-
-public class RandomizeMatchMakingData : MonoBehaviour
+public class RandomizeMatchMakingData
 {
 
     private Player[] _players = new Player[0];
@@ -9,7 +7,12 @@ public class RandomizeMatchMakingData : MonoBehaviour
 
     private int _lastGroupId;
 
-
+    /// <summary>
+    /// create (playersCount) players and set them in (groupsCount) groups
+    /// </summary>
+    /// <param name="playersCount"></param>
+    /// <param name="groupsCount"></param>
+    /// <returns></returns>
     public Player[] CreatePlayers(int playersCount, int groupsCount)
     {
         Array.Resize(ref _players, playersCount);
@@ -23,22 +26,30 @@ public class RandomizeMatchMakingData : MonoBehaviour
         }
         return _players;
     }
-
+    /// <summary>
+    /// create random groups based on groupscount,and set a random count of players on it
+    /// </summary>
+    /// <param name="groupsCount"></param>
     private void RandomizeGroups(int groupsCount)
     {
         Array.Resize(ref _groups, groupsCount);
 
+        Random random = new Random();
+
         for (int i = 0; i < groupsCount; i++)
         {
-            var groupCount = UnityEngine.Random.Range(2, 6);
-            _groups[i] = groupCount;
+            var memberCount = random.Next(2, 6);
+            _groups[i] = memberCount;
         }
         _lastGroupId = 0;
     }
-
+    /// <summary>
+    /// retunr the next group
+    /// </summary>
+    /// <returns></returns>
     private int GetGroup()
     {
-        if (_lastGroupId > _groups.Length - 1) return 0;
+        if (_lastGroupId > _groups.Length - 1) return 0;//if the last group id more than the possible groups id,set the player as a SOLO Player (group id = 0) 
 
         var idGroup = _lastGroupId;
 

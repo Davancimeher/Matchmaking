@@ -17,6 +17,9 @@ public struct Player
         GroupId = groupId;
     }
 }
+/// <summary>
+/// holding group information : group ID and players
+/// </summary>
 public struct GroupInfo : IComparable<GroupInfo>
 {
     public int GroupId;
@@ -44,19 +47,27 @@ public struct GroupInfo : IComparable<GroupInfo>
     }
 }
 
-
+/// <summary>
+/// Matchmaking class 
+/// </summary>
 public class MatchmakingManager : MonoBehaviour
 {
-    const int playerPerTeamCount = 5;
-    const int playerPerMatchCount = playerPerTeamCount * 2;
+    const int PlayerPerTeamCount = 5;
+    const int PlayerPerMatchCount = PlayerPerTeamCount * 2;
 
-    public RandomizeMatchMakingData randomizePlayers;
+    public RandomizeMatchMakingData randomizePlayers = new RandomizeMatchMakingData();
     public UIManager uIManager; 
 
-    public Player[] _allPlayersInMM;
+    public  Player[] _allPlayersInMM;
 
-    private List<Player> _team1 = new List<Player>();
-    private List<Player> _team2 = new List<Player>();
+    private readonly List<Player> _team1 = new List<Player>();
+    private readonly List<Player> _team2 = new List<Player>();
+
+    private  List<Player> _allPlayersList = new List<Player>();
+    //list of not grouped players
+    private  List<Player> _nonGroupedPlayers = new List<Player>();
+
+    private  GroupInfo[] groupInfos = new GroupInfo[0];
 
     private int _matchsMaked;
 
@@ -66,54 +77,36 @@ public class MatchmakingManager : MonoBehaviour
         _matchsMaked = 0;
         _allPlayersInMM =  randomizePlayers.CreatePlayers(int.Parse(uIManager.playersCount.text), int.Parse(uIManager.groupsCount.text));
 
-        TeamGroupingtest(_allPlayersInMM);
+        TeamGrouping(_allPlayersInMM);
     }
 
-    /// create a clone from AllplayersinMM as a liste (easy to manipulate)
-    /// create a dictionary<int,list<player> to split our player with groups
-    /// create a dictionary<int,int> to handle groupe ID with size
-    /// create a list of players containt not grouped players and get them from allplayer list and deleted from all players
-    /// get all groupes in dictionary<ID,player list> and dictionary <ID,count of players>
-    ///team setting :
-    ///if we don't have 10 players,we return without any calcul
-    ///if we have 10 players and we don't have any groupe,set 2 team from not grouped players
-    ///else set teams,set all possible groupe in teams
-    ///if we have 2 teams,return 2 teams,
-    ///else if we don't have 2 teams and have enough not grouped players,complete teams from not grouped players
-    ///else we don't have enough players to create 2 teams.
-    ///  Thank you for your time  
+    /// <summary>
+    /// Get array of players and create as possible matchs (depended on PlayerPerMatchCount)
     /// </summary>
-    /// <param name="allPlayersInMM"></param>
-    /// <param name="Team1"></param>
-    /// <param name="Team2"></param>
-    private void TeamGroupingtest(Player[] allPlayersInMM)
+    /// <param name="allPlayersInMM">Players Array input</param>
+    private void TeamGrouping(Player[] allPlayersInMM)
     {
-        _team1.Clear();
-        _team2.Clear();
+        ClearLists();
 
         //if all players < 10 ,return without any calcul
-        if (allPlayersInMM.Length < playerPerMatchCount)
+        if (allPlayersInMM.Length < PlayerPerMatchCount)
         {
             uIManager.SetMatchMakingResults(_matchsMaked, _allPlayersInMM.Length);
             return;
         }
 
-        //get a image of all players in List
-        List<Player> allPlayers = new List<Player>(allPlayersInMM);
+        _allPlayersList = new List<Player>(allPlayersInMM);
 
-        //list of not grouped players
-        List<Player> nonGroupedPlayers = allPlayers.FindAll(x => x.GroupId == 0);
+        //get all solo players from _allplayersList
+        _nonGroupedPlayers = _allPlayersList.FindAll(x => x.GroupId == 0);
 
         //remove all not grouped players from all players
-        allPlayers.RemoveAll(r => r.GroupId == 0);
-
-
-        GroupInfo[] groupInfos = new GroupInfo[0];
+        _allPlayersList.RemoveAll(r => r.GroupId == 0);
 
         //splitting players with GroupeID
-        foreach (Player _player in allPlayers)
+        foreach (Player _player in _allPlayersList)
         {
-            var index = Array.FindIndex(groupInfos, id => id.GroupId == _player.GroupId);
+            int index = Array.FindIndex(groupInfos, id => id.GroupId == _player.GroupId);
 
             if (index >= 0)
             {
@@ -139,26 +132,27 @@ public class MatchmakingManager : MonoBehaviour
         //set 2 teams from non-grouped players if we don't have any groupe
         if (groupInfos.Length <= 0)
         {
-            if (nonGroupedPlayers.Count < 10)
+            if (_nonGroupedPlayers.Count < 10)
             {
                 Debug.Log("Not enough Players !");
                 return;
             }
             //set 2 teams from not grouped players
-            SetFromNonGroupedPlayers(nonGroupedPlayers);
+            SetFromNonGroupedPlayers();
         }
 
         //we Have some groups
         else
         {
-            OrderGroupInfoArray(ref groupInfos);
-
-            SetTeams(ref groupInfos);
+            //order descending  groupinfo with players count
+            OrderGroupInfoArray();
+            //create teams 
+            SetTeams();
 
             //if we don't have 2 complete teams,and we have enough not grouped players
-            if (nonGroupedPlayers.Count >= playerPerMatchCount - (_team1.Count + _team2.Count))
+            if (_nonGroupedPlayers.Count >= PlayerPerMatchCount - (_team1.Count + _team2.Count))
             {
-                SetFromNonGroupedPlayers(nonGroupedPlayers);
+                SetFromNonGroupedPlayers();
             }
             //we don't have enough not grouped players
             else
@@ -167,75 +161,84 @@ public class MatchmakingManager : MonoBehaviour
                 return;
             }
         }
-
+        //remove matched players from all players 
         RemoveMatchedPlayers();
 
         _matchsMaked++;
-
-        TeamGroupingtest(_allPlayersInMM);
+        //recursive call 
+        TeamGrouping(_allPlayersInMM);
 
     }
-    private void SetTeams(ref GroupInfo[] groupInfos)
+    /// <summary>
+    /// clear all list used in matchmaking
+    /// </summary>
+    private void ClearLists()
+    {
+        _team1.Clear();
+        _team2.Clear();
+        _allPlayersList.Clear();
+        _nonGroupedPlayers.Clear();
+        Array.Resize(ref groupInfos, 0);    
+    }
+    /// <summary>
+    /// set teams based on groupinfo (the first priority to groups)
+    /// </summary>
+    private void SetTeams()
     {
         List<int> usedGroupsIndex = new List<int>();
 
-        foreach (var GroupInfo in groupInfos)
+        foreach (GroupInfo groupInfo in groupInfos)
         {
-            if (GetNextTeam().Count + GroupInfo.GroupPlayers.Length <= playerPerTeamCount)
+            //we get the next team or the smalleset team and check if the next group can be added in it 
+            if (GetNextTeam().Count + groupInfo.GroupPlayers.Length <= PlayerPerTeamCount)
             {
-                GetNextTeam().AddRange(GroupInfo.GroupPlayers);
-                usedGroupsIndex.Add(GroupInfo.GroupId);
+                GetNextTeam().AddRange(groupInfo.GroupPlayers);
+                usedGroupsIndex.Add(groupInfo.GroupId);
             }
             //we have already 2 teams
-            if ((_team1.Count + _team2.Count).Equals(playerPerMatchCount))
+            if ((_team1.Count + _team2.Count).Equals(PlayerPerMatchCount))
             {
                 return;
             }
         }
-
-        if (usedGroupsIndex.Count > 0)
-        {
-            List<GroupInfo> groupInfoList = new List<GroupInfo>(groupInfos);
-
-            foreach (var usedGroupId in usedGroupsIndex)
-            {
-                groupInfoList.RemoveAll(r => r.GroupId == usedGroupId);
-            }
-            groupInfos = groupInfos.ToArray();
-        }
     }
-
-    private void SetFromNonGroupedPlayers(List<Player> _NonGroupedPlayers)
+    /// <summary>
+    /// set players from non grouped players or solo players 
+    /// </summary>
+    private void SetFromNonGroupedPlayers()
     {
-        int team1Index = playerPerTeamCount - _team1.Count;
+        int team1Index = PlayerPerTeamCount - _team1.Count;
 
-        _team1.AddRange(_NonGroupedPlayers.GetRange(0, playerPerTeamCount - _team1.Count));
+        _team1.AddRange(_nonGroupedPlayers.GetRange(0, PlayerPerTeamCount - _team1.Count));
 
-        _team2.AddRange(_NonGroupedPlayers.GetRange(team1Index, playerPerTeamCount - _team2.Count));
+        _team2.AddRange(_nonGroupedPlayers.GetRange(team1Index, PlayerPerTeamCount - _team2.Count));
     }
 
     /// <summary>
     /// return the smallest team
     /// </summary>
-    /// <param name="_Team1"></param>
-    /// <param name="_Team2"></param>
     /// <returns></returns>
     private List<Player> GetNextTeam()
     {
         return _team1.Count > _team2.Count ? _team1 : _team2;
     }
+    /// <summary>
+    /// remove matched players
+    /// </summary>
     private void RemoveMatchedPlayers()
     {
-        var allPlayers = _allPlayersInMM.ToList();
-        var MatchedPlayers = _team1;
-        MatchedPlayers.AddRange(_team2);
+        List<Player> allPlayers = _allPlayersInMM.ToList();
+        List<Player> matchedPlayers = _team1;
+        matchedPlayers.AddRange(_team2);
 
-        allPlayers.RemoveAll(x => MatchedPlayers.Any(y => y.PlayerId == x.PlayerId));
+        allPlayers.RemoveAll(x => matchedPlayers.Any(y => y.PlayerId == x.PlayerId));
         _allPlayersInMM = allPlayers.ToArray();
     }
-
-    private void OrderGroupInfoArray(ref GroupInfo[] _groupInfos)
+    /// <summary>
+    /// sort all group info array descending using players count
+    /// </summary>
+    private void OrderGroupInfoArray()
     {
-        Array.Sort(_groupInfos);
+        Array.Sort(groupInfos);
     }
 }
