@@ -11,10 +11,14 @@ __( " JUST TO TEST THE DESIGN ",in real case,we get only the leader of the group
   
   Example :
   
-  Player 1 : Id = 1, groupId = 3
-  Player 2 : Id = 2, groupId = 3
+  Player 1 : Id = 1, groupId = 3  
+  
+  Player 2 : Id = 2, groupId = 3  
+  
   Player 3 : Id = 3, groupId = 0
+  
   player 4 : Id = 4, groupId = 0
+  
   In this example,Player 1 and Player 2 are in the same group
   and Player 3 and Player 4 are SOLO players (group ID = 0)
   
