@@ -43,6 +43,6 @@ __( " JUST TO TEST THE DESIGN ",in real case,we get only the leader of the group
    
 ## Result
 
-<img src="https://github.com/Davancimeher/MatchmakingTest/blob/main/README.Assets/Matchmaking_Output" width="1000">
+<img src="https://github.com/Davancimeher/MatchmakingTest/blob/main/README.Assets/Matchmaking_Output.PNG" width="1000">
 
  
