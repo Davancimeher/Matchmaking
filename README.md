@@ -24,15 +24,25 @@ __( " JUST TO TEST THE DESIGN ",in real case,we get only the leader of the group
   Player 3 and Player 4 are SOLO players (group ID = 0)
   
 # MatchmakingManager class
+
 1- Start the match making with creation of an array of groupInfo (Hold the groupid and the list of players)
+
 2- Sort the groupInfos array descending with players count
+
 3- Looping in Groupinfos Array and set AS POSSIBLE groups in team1 and team 2
+
 4- if we have a match (team1 + team 2 =  PlayerPerMatchCount)
+
    - Remove matched Players
+   
    - Match maked ++
+   
    else 
+   
    Add the rest of the teams from SOLO Players
+   
 ## Result
+
 <img src="https://github.com/Davancimeher/MatchmakingTest/blob/main/README.Assets/Matchmaking_Output" width="1000">
 
  
